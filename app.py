@@ -582,29 +582,45 @@ def build_custom_css(theme_choice: str = "🖥️ Auto (Følg system)") -> str:
     .pitch-row {{
         display: flex;
         justify-content: center;
-        align-items: center;
-        gap: 16px;
-        flex-wrap: wrap;
+        align-items: stretch;
+        gap: 14px;
+        flex-wrap: nowrap;
         position: relative;
         z-index: 2;
         margin: 10px 0;
+        width: 100%;
+        box-sizing: border-box;
+    }}
+    .pitch-row .pitch-card-link {{
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: 210px;
+        display: flex;
+        flex-direction: column;
+        text-decoration: none !important;
+        color: inherit !important;
     }}
 
     /* Store Spillerkort på banen */
     .pitch-player-card {{
         position: relative;
-        width: 200px;
-        min-width: 185px;
-        max-width: 225px;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
         background: var(--pitch-card-bg);
         border: 2px solid var(--pitch-card-border);
         border-radius: 18px;
         padding: 10px 12px 14px 12px;
         text-align: center;
         box-shadow: var(--pitch-card-shadow);
-        margin: 6px 8px;
+        margin: 0;
         overflow: hidden;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
     }}
     .pitch-player-card:hover {{
         transform: translateY(-5px) scale(1.03);
@@ -982,82 +998,133 @@ def build_custom_css(theme_choice: str = "🖥️ Auto (Følg system)") -> str:
             font-size: 0.68rem !important;
         }}
         .pitch-container {{
-            padding: 12px 4px !important;
-            border-radius: 14px !important;
+            padding: 10px 4px !important;
+            border-radius: 16px !important;
             border-width: 2px !important;
-            min-height: 800px !important;
-            margin: 10px 0 !important;
+            min-height: 540px !important;
+            margin: 8px 0 !important;
+            overflow-x: hidden !important;
+            justify-content: space-between !important;
         }}
         .pitch-row {{
-            gap: 5px !important;
-            margin: 6px 0 !important;
+            gap: 4px !important;
+            margin: 4px 0 !important;
+            flex-wrap: nowrap !important;
+            justify-content: center !important;
+            align-items: stretch !important;
+            width: 100% !important;
+        }}
+        .pitch-row .pitch-card-link {{
+            flex: 1 1 0 !important;
+            min-width: 0 !important;
+            max-width: 115px !important;
+            display: flex !important;
         }}
         .pitch-player-card {{
-            width: 120px !important;
-            min-width: 90px !important;
-            max-width: 130px !important;
-            padding: 6px 5px 8px 5px !important;
-            margin: 2px 1px !important;
-            border-radius: 12px !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            padding: 4px 3px 6px 3px !important;
+            margin: 0 !important;
+            border-radius: 11px !important;
+            border-width: 1.5px !important;
         }}
         .card-photo-container {{
-            height: 70px !important;
-            margin: 2px auto 4px auto !important;
+            height: 56px !important;
+            margin: 1px auto 3px auto !important;
         }}
         .card-photo-container::before {{
-            width: 60px !important;
-            height: 60px !important;
+            width: 48px !important;
+            height: 48px !important;
+            top: 2px !important;
         }}
         .card-player-photo {{
-            height: 70px !important;
-            transform: scale(1.35) translateY(2px) !important;
+            height: 56px !important;
+            transform: scale(1.3) translateY(2px) !important;
         }}
         .pitch-card-name {{
-            font-size: 12px !important;
-            margin: 2px 0 !important;
+            font-size: 10px !important;
+            margin: 1px 0 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            line-height: 1.15 !important;
         }}
         .club-badge-img {{
-            width: 16px !important;
-            height: 16px !important;
+            width: 13px !important;
+            height: 13px !important;
         }}
         .club-pill {{
-            font-size: 8px !important;
-            padding: 1px 4px !important;
+            font-size: 7.5px !important;
+            padding: 0.5px 3px !important;
+            line-height: 1 !important;
         }}
         .captain-pill {{
-            font-size: 8px !important;
-            padding: 1px 4px !important;
+            font-size: 7.5px !important;
+            padding: 0.5px 3px !important;
+            line-height: 1 !important;
         }}
         .pitch-card-fixture {{
-            font-size: 8.5px !important;
-            padding: 2px 4px !important;
+            font-size: 8px !important;
+            padding: 1px 2px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            line-height: 1.1 !important;
+            margin-bottom: 1px !important;
         }}
         .pitch-card-info-text {{
-            font-size: 8.5px !important;
+            font-size: 7.5px !important;
+            line-height: 1.05 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
         }}
         .pitch-pts-box {{
-            padding: 2px 6px !important;
-            margin-top: 3px !important;
+            padding: 1px 2px !important;
+            margin-top: 2px !important;
+            border-radius: 5px !important;
         }}
         .pitch-pts-val {{
-            font-size: 13px !important;
+            font-size: 12px !important;
+            font-weight: 900 !important;
+            line-height: 1.1 !important;
         }}
         .pitch-pts-label {{
-            font-size: 7.5px !important;
+            font-size: 7px !important;
+            line-height: 1 !important;
         }}
         .pitch-card-click-hint {{
-            font-size: 7.5px !important;
-            padding: 1px 3px !important;
+            display: none !important;
+        }}
+        div[data-testid="stHorizontalBlock"]:has(.bench-card) {{
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            gap: 4px !important;
+            width: 100% !important;
+        }}
+        div[data-testid="stHorizontalBlock"]:has(.bench-card) > div[data-testid="column"] {{
+            flex: 1 1 0 !important;
+            min-width: 0 !important;
+            width: auto !important;
+            padding: 0 !important;
         }}
         .bench-card {{
-            padding: 6px 5px 8px 5px !important;
-            border-radius: 12px !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            padding: 4px 3px 6px 3px !important;
+            border-radius: 11px !important;
         }}
         .bench-card .card-photo-container {{
-            height: 60px !important;
+            height: 52px !important;
+            margin: 1px auto 3px auto !important;
         }}
         .bench-card .card-player-photo {{
-            height: 60px !important;
+            height: 52px !important;
+        }}
+        .bench-card .pitch-card-click-hint {{
+            display: none !important;
         }}
         div[data-testid="stTabs"] button {{
             padding: 6px 8px !important;
@@ -1066,32 +1133,153 @@ def build_custom_css(theme_choice: str = "🖥️ Auto (Følg system)") -> str:
     }}
 
     @media (max-width: 480px) {{
+        .pitch-container {{
+            padding: 8px 3px !important;
+            border-radius: 14px !important;
+            min-height: 480px !important;
+            margin: 6px 0 !important;
+        }}
         .pitch-row {{
-            gap: 3px !important;
+            gap: 2.5px !important;
+            margin: 3px 0 !important;
+            flex-wrap: nowrap !important;
+            width: 100% !important;
+        }}
+        .pitch-row .pitch-card-link {{
+            flex: 1 1 0 !important;
+            min-width: 0 !important;
+            max-width: 82px !important;
+            display: flex !important;
         }}
         .pitch-player-card {{
-            width: calc(25% - 4px) !important;
-            min-width: 70px !important;
-            max-width: 90px !important;
-            padding: 4px 3px 6px 3px !important;
-            margin: 2px 1px !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            padding: 3px 2px 4px 2px !important;
+            margin: 0 !important;
+            border-radius: 9px !important;
+            border-width: 1.5px !important;
         }}
         .card-photo-container {{
-            height: 52px !important;
+            height: 44px !important;
+            margin: 1px auto !important;
+        }}
+        .card-photo-container::before {{
+            width: 38px !important;
+            height: 38px !important;
+            top: 2px !important;
         }}
         .card-player-photo {{
-            height: 52px !important;
+            height: 44px !important;
+            transform: scale(1.3) translateY(1px) !important;
+        }}
+        .card-top-row {{
+            padding: 0 1px !important;
+            gap: 1px !important;
+            margin-bottom: 1px !important;
+        }}
+        .club-badge-img {{
+            width: 11px !important;
+            height: 11px !important;
+        }}
+        .club-pill {{
+            font-size: 6.5px !important;
+            padding: 0.5px 2px !important;
+            border-radius: 2px !important;
+            line-height: 1 !important;
+        }}
+        .captain-pill {{
+            font-size: 6.5px !important;
+            padding: 0.5px 2px !important;
+            border-radius: 2px !important;
+            line-height: 1 !important;
         }}
         .pitch-card-name {{
-            font-size: 9.5px !important;
+            font-size: 8.5px !important;
+            margin: 1px 0 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            line-height: 1.1 !important;
+            padding: 0 1px !important;
         }}
         .pitch-card-fixture {{
-            font-size: 7.5px !important;
-            line-height: 1.1 !important;
-            padding: 1px 2px !important;
+            font-size: 7px !important;
+            line-height: 1 !important;
+            padding: 1px 1.5px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            margin-bottom: 1px !important;
+            border-radius: 2.5px !important;
+        }}
+        .pitch-card-info-text {{
+            font-size: 6.5px !important;
+            line-height: 1 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            margin-bottom: 1px !important;
+        }}
+        .pitch-card-match-sub,
+        .pitch-card-events {{
+            font-size: 6.5px !important;
+            line-height: 1 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }}
+        .pitch-pts-box {{
+            padding: 1px 1px !important;
+            margin-top: 1px !important;
+            border-radius: 4px !important;
+        }}
+        .pitch-pts-label {{
+            font-size: 6px !important;
+            line-height: 1 !important;
         }}
         .pitch-pts-val {{
-            font-size: 11px !important;
+            font-size: 10.5px !important;
+            font-weight: 900 !important;
+            line-height: 1 !important;
+        }}
+        div[data-testid="stHorizontalBlock"]:has(.bench-card) {{
+            gap: 2.5px !important;
+        }}
+        .bench-card {{
+            padding: 3px 2px 4px 2px !important;
+            border-radius: 9px !important;
+        }}
+        .bench-card .card-photo-container {{
+            height: 42px !important;
+            margin: 1px auto !important;
+        }}
+        .bench-card .card-player-photo {{
+            height: 42px !important;
+        }}
+    }}
+
+    @media (max-width: 360px) {{
+        .pitch-row {{
+            gap: 1.5px !important;
+        }}
+        .pitch-player-card {{
+            padding: 2px 1px 3px 1px !important;
+        }}
+        .card-photo-container {{
+            height: 38px !important;
+        }}
+        .card-player-photo {{
+            height: 38px !important;
+        }}
+        .pitch-card-name {{
+            font-size: 7.5px !important;
+        }}
+        .pitch-card-fixture {{
+            font-size: 6.5px !important;
+        }}
+        .pitch-pts-val {{
+            font-size: 9.5px !important;
         }}
     }}
     </style>
