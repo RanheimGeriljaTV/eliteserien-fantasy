@@ -1,0 +1,54 @@
+[
+  {
+    "id": "tx_1789324645_45_382",
+    "gw": 21,
+    "date": "13.09.2026 20:37",
+    "out_id": 45,
+    "out_name": "Noah",
+    "out_team": "BRA",
+    "in_id": 382,
+    "in_name": "Grundetjern",
+    "in_team": "VIF",
+    "exp_gain": 18.0,
+    "hit_cost": 0
+  },
+  {
+    "id": "tx_1791270294_382_141",
+    "gw": 22,
+    "date": "06.10.2026 09:04",
+    "out_id": 382,
+    "out_name": "Grundetjern",
+    "out_team": "VIF",
+    "in_id": 141,
+    "in_name": "Næss Alvheim",
+    "in_team": "KBK",
+    "exp_gain": 10.07,
+    "hit_cost": 0
+  },
+  {
+    "id": "tx_1791883304_29_112",
+    "gw": 23,
+    "date": "13.10.2026 11:21",
+    "out_id": 29,
+    "out_name": "Soltvedt",
+    "out_team": "BRA",
+    "in_id": 112,
+    "in_name": "Hoseth",
+    "in_team": "KFUM",
+    "exp_gain": 14.06,
+    "hit_cost": 0
+  },
+  {
+    "id": "tx_1792690359_283_214",
+    "gw": 24,
+    "date": "22.10.2026 19:32",
+    "out_id": 283,
+    "out_name": "Utvik",
+    "out_team": "S08",
+    "in_id": 214,
+    "in_name": "Pereira",
+    "in_team": "RBK",
+    "exp_gain": 20.04,
+    "hit_cost": 0
+  }
+]
