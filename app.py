@@ -1618,7 +1618,8 @@ def compute_player_xp_model(
 # ==============================================================================
 def solve_optimal_starting_xi(squad_df: pd.DataFrame) -> Tuple[List[int], List[int], int, int]:
     """
-    Finner optimal startellever og benk fra de 15 spillerne i troppen ved hjelp av PuLP.
+    Finner optimal startellever og benk fra de 15 spillerne i troppen ved hjelp av PuLP (MILP).
+    Inkluderer robust fallback-heuristikk dersom solver-miljøet mangler eller feiler.
     Begrensninger:
     - Nøyaktig 11 i startoppstillingen
     - Nøyaktig 1 Keeper
@@ -1627,54 +1628,104 @@ def solve_optimal_starting_xi(squad_df: pd.DataFrame) -> Tuple[List[int], List[i
     - Mellom 1 og 3 Angrepsspillere
     Returnerer: (starter_ids, bench_ids, captain_id, vice_captain_id)
     """
-    prob = pulp.LpProblem("Optimize_Starting_XI", pulp.LpMaximize)
     ids = squad_df['id'].tolist()
-    
-    # Binær variabel for om spilleren starter
-    is_starter = {pid: pulp.LpVariable(f"start_{pid}", cat=pulp.LpBinary) for pid in ids}
-    
-    # Målfunksjon: Maksimer startende xP for neste runde
-    xp_dict = dict(zip(squad_df['id'], squad_df['next_gw_xp']))
-    prob += pulp.lpSum(is_starter[pid] * xp_dict[pid] for pid in ids)
-    
-    # Begrensninger
-    prob += pulp.lpSum(is_starter[pid] for pid in ids) == 11
-    
-    # Keeper: eksakt 1
     gkps = squad_df[squad_df['element_type'] == 1]['id'].tolist()
-    prob += pulp.lpSum(is_starter[pid] for pid in gkps) == 1
-    
-    # Forsvar: 3 - 5
     defs = squad_df[squad_df['element_type'] == 2]['id'].tolist()
-    prob += pulp.lpSum(is_starter[pid] for pid in defs) >= 3
-    prob += pulp.lpSum(is_starter[pid] for pid in defs) <= 5
-    
-    # Midtbane: 2 - 5
     mids = squad_df[squad_df['element_type'] == 3]['id'].tolist()
-    prob += pulp.lpSum(is_starter[pid] for pid in mids) >= 2
-    prob += pulp.lpSum(is_starter[pid] for pid in mids) <= 5
-    
-    # Angrep: 1 - 3
     fwds = squad_df[squad_df['element_type'] == 4]['id'].tolist()
-    prob += pulp.lpSum(is_starter[pid] for pid in fwds) >= 1
-    prob += pulp.lpSum(is_starter[pid] for pid in fwds) <= 3
-    
-    prob.solve(pulp.PULP_CBC_CMD(msg=False))
-    
-    starters = [pid for pid in ids if is_starter[pid].varValue is not None and is_starter[pid].varValue > 0.5]
+
+    starters = []
+    try:
+        prob = pulp.LpProblem("Optimize_Starting_XI", pulp.LpMaximize)
+        is_starter = {pid: pulp.LpVariable(f"start_{pid}", cat="Binary") for pid in ids}
+
+        xp_dict = dict(zip(squad_df['id'], squad_df['next_gw_xp']))
+        prob += pulp.lpSum(is_starter[pid] * xp_dict.get(pid, 0.0) for pid in ids)
+
+        # Begrensninger
+        prob += pulp.lpSum(is_starter[pid] for pid in ids) == 11
+        if gkps:
+            prob += pulp.lpSum(is_starter[pid] for pid in gkps) == 1
+        if defs:
+            prob += pulp.lpSum(is_starter[pid] for pid in defs) >= min(3, len(defs))
+            prob += pulp.lpSum(is_starter[pid] for pid in defs) <= min(5, len(defs))
+        if mids:
+            prob += pulp.lpSum(is_starter[pid] for pid in mids) >= min(2, len(mids))
+            prob += pulp.lpSum(is_starter[pid] for pid in mids) <= min(5, len(mids))
+        if fwds:
+            prob += pulp.lpSum(is_starter[pid] for pid in fwds) >= min(1, len(fwds))
+            prob += pulp.lpSum(is_starter[pid] for pid in fwds) <= min(3, len(fwds))
+
+        prob.solve(pulp.PULP_CBC_CMD(msg=False))
+        solved_starters = [pid for pid in ids if is_starter[pid].varValue is not None and is_starter[pid].varValue > 0.5]
+        if len(solved_starters) == 11:
+            starters = solved_starters
+    except Exception:
+        starters = []
+
+    # Heuristisk fallback hvis PuLP feiler eller ikke returnerte nøyaktig 11 spillere
+    if len(starters) != 11:
+        squad_sorted = squad_df.sort_values(by='next_gw_xp', ascending=False)
+        gk_sorted = squad_sorted[squad_sorted['element_type'] == 1]['id'].tolist()
+        def_sorted = squad_sorted[squad_sorted['element_type'] == 2]['id'].tolist()
+        mid_sorted = squad_sorted[squad_sorted['element_type'] == 3]['id'].tolist()
+        fwd_sorted = squad_sorted[squad_sorted['element_type'] == 4]['id'].tolist()
+
+        starters = []
+        if gk_sorted:
+            starters.append(gk_sorted[0])
+        starters.extend(def_sorted[:3])
+        starters.extend(mid_sorted[:2])
+        starters.extend(fwd_sorted[:1])
+
+        rem_candidates = []
+        for pid in def_sorted[3:]:
+            rem_candidates.append((pid, 2))
+        for pid in mid_sorted[2:]:
+            rem_candidates.append((pid, 3))
+        for pid in fwd_sorted[1:]:
+            rem_candidates.append((pid, 4))
+
+        xp_map = dict(zip(squad_df['id'], squad_df['next_gw_xp']))
+        rem_candidates.sort(key=lambda x: xp_map.get(x[0], 0.0), reverse=True)
+
+        d_count = len([p for p in starters if p in defs])
+        m_count = len([p for p in starters if p in mids])
+        f_count = len([p for p in starters if p in fwds])
+
+        for pid, pos in rem_candidates:
+            if len(starters) == 11:
+                break
+            if pos == 2 and d_count < 5:
+                starters.append(pid)
+                d_count += 1
+            elif pos == 3 and m_count < 5:
+                starters.append(pid)
+                m_count += 1
+            elif pos == 4 and f_count < 3:
+                starters.append(pid)
+                f_count += 1
+
+        # Nødutfylling dersom troppen har uvanlige posisjonsavvik
+        for pid in ids:
+            if len(starters) == 11:
+                break
+            if pid not in starters:
+                starters.append(pid)
+
     bench = [pid for pid in ids if pid not in starters]
-    
+
     # Rangér kaptein og visekaptein blant startere etter neste rundes xP
     starters_df = squad_df[squad_df['id'].isin(starters)].sort_values(by='next_gw_xp', ascending=False)
-    captain_id = starters_df.iloc[0]['id'] if len(starters_df) > 0 else ids[0]
+    captain_id = starters_df.iloc[0]['id'] if len(starters_df) > 0 else (ids[0] if ids else 0)
     vice_captain_id = starters_df.iloc[1]['id'] if len(starters_df) > 1 else captain_id
-    
+
     # Sorter benken: Reservekeeper først, deretter utespillere etter synkende xP
     bench_gk = [pid for pid in bench if pid in gkps]
     bench_outfield = [pid for pid in bench if pid not in gkps]
     bench_outfield_sorted = squad_df[squad_df['id'].isin(bench_outfield)].sort_values(by='next_gw_xp', ascending=False)['id'].tolist()
     ordered_bench = bench_gk + bench_outfield_sorted
-    
+
     return starters, ordered_bench, captain_id, vice_captain_id
 
 
@@ -1700,65 +1751,68 @@ def solve_transfers_pulp(
     current_squad_df = all_players_df[all_players_df['id'].isin(current_squad_ids)]
     current_budget_raw = current_squad_df['cost_raw'].sum() + int(round(bank_m * 10))
     
-    prob = pulp.LpProblem(f"Transfer_Optimizer_{k_transfers}", pulp.LpMaximize)
-    
-    # Binær variabel y_i: Er spiller i med i den nye troppen?
-    y = {pid: pulp.LpVariable(f"squad_{pid}", cat=pulp.LpBinary) for pid in all_ids}
-    
-    # Målfunksjon: Maksimer total xP over den valgte horisonten
-    xp_dict = dict(zip(all_players_df['id'], all_players_df['total_xp']))
-    prob += pulp.lpSum(y[pid] * xp_dict[pid] for pid in all_ids)
-    
-    # Tropp på 15 spillere
-    prob += pulp.lpSum(y[pid] for pid in all_ids) == 15
-    
-    # Posisjonskvoter
-    for pos_code, quota in [(1, 2), (2, 5), (3, 5), (4, 3)]:
-        pos_ids = all_players_df[all_players_df['element_type'] == pos_code]['id'].tolist()
-        prob += pulp.lpSum(y[pid] for pid in pos_ids) == quota
+    try:
+        prob = pulp.LpProblem(f"Transfer_Optimizer_{k_transfers}", pulp.LpMaximize)
         
-    # Maks 3 spillere per Eliteserien-lag
-    for tid in teams_dict.keys():
-        club_ids = all_players_df[all_players_df['team_id'] == tid]['id'].tolist()
-        if club_ids:
-            prob += pulp.lpSum(y[pid] for pid in club_ids) <= 3
+        # Binær variabel y_i: Er spiller i med i den nye troppen?
+        y = {pid: pulp.LpVariable(f"squad_{pid}", cat="Binary") for pid in all_ids}
+        
+        # Målfunksjon: Maksimer total xP over den valgte horisonten
+        xp_dict = dict(zip(all_players_df['id'], all_players_df['total_xp']))
+        prob += pulp.lpSum(y[pid] * xp_dict[pid] for pid in all_ids)
+        
+        # Tropp på 15 spillere
+        prob += pulp.lpSum(y[pid] for pid in all_ids) == 15
+        
+        # Posisjonskvoter
+        for pos_code, quota in [(1, 2), (2, 5), (3, 5), (4, 3)]:
+            pos_ids = all_players_df[all_players_df['element_type'] == pos_code]['id'].tolist()
+            prob += pulp.lpSum(y[pid] for pid in pos_ids) == quota
             
-    # Budsjettregel
-    cost_dict = dict(zip(all_players_df['id'], all_players_df['cost_raw']))
-    prob += pulp.lpSum(y[pid] * cost_dict[pid] for pid in all_ids) <= current_budget_raw
-    
-    # Nøyaktig k spillere byttet ut fra nåværende tropp
-    prob += pulp.lpSum(1 - y[pid] for pid in current_squad_ids) == k_transfers
-    
-    # Løs problemet
-    status = prob.solve(pulp.PULP_CBC_CMD(msg=False))
-    if pulp.LpStatus[status] != 'Optimal':
-        return None
+        # Maks 3 spillere per Eliteserien-lag
+        for tid in teams_dict.keys():
+            club_ids = all_players_df[all_players_df['team_id'] == tid]['id'].tolist()
+            if club_ids:
+                prob += pulp.lpSum(y[pid] for pid in club_ids) <= 3
+                
+        # Budsjettregel
+        cost_dict = dict(zip(all_players_df['id'], all_players_df['cost_raw']))
+        prob += pulp.lpSum(y[pid] * cost_dict[pid] for pid in all_ids) <= current_budget_raw
         
-    new_squad_ids = [pid for pid in all_ids if y[pid].varValue is not None and y[pid].varValue > 0.5]
-    transfers_out = [pid for pid in current_squad_ids if pid not in new_squad_ids]
-    transfers_in = [pid for pid in new_squad_ids if pid not in current_set]
-    
-    out_df = all_players_df[all_players_df['id'].isin(transfers_out)]
-    in_df = all_players_df[all_players_df['id'].isin(transfers_in)]
-    
-    xp_out = float(out_df['total_xp'].sum())
-    xp_in = float(in_df['total_xp'].sum())
-    gross_gain = round(xp_in - xp_out, 2)
-    
-    new_cost_raw = sum(cost_dict[pid] for pid in new_squad_ids)
-    remaining_bank = round((current_budget_raw - new_cost_raw) / 10.0, 2)
-    
-    return {
-        'k': k_transfers,
-        'transfers_out': out_df,
-        'transfers_in': in_df,
-        'xp_out': xp_out,
-        'xp_in': xp_in,
-        'gross_gain': gross_gain,
-        'remaining_bank': remaining_bank,
-        'new_squad_ids': new_squad_ids
-    }
+        # Nøyaktig k spillere byttet ut fra nåværende tropp
+        prob += pulp.lpSum(1 - y[pid] for pid in current_squad_ids) == k_transfers
+        
+        # Løs problemet
+        status = prob.solve(pulp.PULP_CBC_CMD(msg=False))
+        if pulp.LpStatus[status] != 'Optimal':
+            return None
+            
+        new_squad_ids = [pid for pid in all_ids if y[pid].varValue is not None and y[pid].varValue > 0.5]
+        transfers_out = [pid for pid in current_squad_ids if pid not in new_squad_ids]
+        transfers_in = [pid for pid in new_squad_ids if pid not in current_set]
+        
+        out_df = all_players_df[all_players_df['id'].isin(transfers_out)]
+        in_df = all_players_df[all_players_df['id'].isin(transfers_in)]
+        
+        xp_out = float(out_df['total_xp'].sum())
+        xp_in = float(in_df['total_xp'].sum())
+        gross_gain = round(xp_in - xp_out, 2)
+        
+        new_cost_raw = sum(cost_dict[pid] for pid in new_squad_ids)
+        remaining_bank = round((current_budget_raw - new_cost_raw) / 10.0, 2)
+        
+        return {
+            'k': k_transfers,
+            'transfers_out': out_df,
+            'transfers_in': in_df,
+            'xp_out': xp_out,
+            'xp_in': xp_in,
+            'gross_gain': gross_gain,
+            'remaining_bank': remaining_bank,
+            'new_squad_ids': new_squad_ids
+        }
+    except Exception:
+        return None
 
 
 # ==============================================================================
